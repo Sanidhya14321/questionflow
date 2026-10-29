@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readJson, apiError } from "@/lib/api";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { voteOnAssessment } from "@/lib/data/assessments";
 import { getSessionFromRequest } from "@/lib/auth/session";
@@ -18,13 +20,15 @@ export async function POST(
 
   try {
     const { assessmentId } = await params;
-    const payload = schema.parse(await request.json());
+    await rateLimit("vote", session.userId, 30);
+    const payload = schema.parse(await readJson(request));
     const result = await voteOnAssessment({
       assessmentId,
+      userId: session.userId,
       voteType: payload.voteType,
     });
     return NextResponse.json(result);
-  } catch {
-    return NextResponse.json({ message: "Failed to vote" }, { status: 400 });
+  } catch (error) {
+    return apiError(error, "vote");
   }
 }

@@ -1,0 +1,21 @@
+name: Production verification
+on:
+  deployment_status:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/smoke.mjs
+        env:
+          SMOKE_BASE_URL: https://questionflow-sanidhya.vercel.app
+          EXPECTED_REVISION: ${{ github.event.deployment.sha }}

@@ -37,6 +37,8 @@ export interface Assessment {
   isAIGenerated?: boolean;
 }
 
+export type AssessmentSummary = Omit<Assessment, "questions">;
+
 export interface AssessmentResult {
   assessmentId: string;
   assessmentTitle: string;

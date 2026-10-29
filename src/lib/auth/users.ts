@@ -1,27 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-export async function ensureAdminUser() {
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) {
-    return;
-  }
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
-
-  if (!existingAdmin) {
-    const passwordHash = await bcrypt.hash(adminPassword, 10);
-    await prisma.user.create({
-      data: {
-        email: adminEmail,
-        name: "Site Administrator",
-        passwordHash,
-        role: "admin",
-      },
-    });
-  }
-}
-
 export async function registerUser(name: string, email: string, password: string) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -40,7 +19,6 @@ export async function registerUser(name: string, email: string, password: string
 }
 
 export async function verifyUserCredentials(email: string, password: string) {
-  await ensureAdminUser();
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return null;
 

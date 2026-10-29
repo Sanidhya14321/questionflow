@@ -11,17 +11,18 @@ import { ArrowLeft, ArrowRight, CheckSquare, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
-async function saveAssessmentResult(result: AssessmentResult): Promise<void> {
+async function saveAssessmentResult(result: AssessmentResult, submissionId: string): Promise<AssessmentResult> {
   const response = await fetch("/api/results", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(result),
+    body: JSON.stringify({ assessmentId: result.assessmentId, answers: result.answers, submissionId }),
   });
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     throw new Error(payload?.message || "Failed to save result");
   }
+  return response.json();
 }
 
 
@@ -34,6 +35,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
   const [userAnswers, setUserAnswers] = useState<(string | null)[]>(
     new Array(assessment.questions.length).fill(null)
   );
+  const submissionId = useRef<string | null>(null);
   const submissionLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -56,7 +58,8 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
   }, []);
 
   const currentQuestion = assessment.questions[currentQuestionIndex];
-  const progressPercentage = ((currentQuestionIndex + 1) / assessment.questions.length) * 100;
+  const answeredCount = userAnswers.filter(answer => answer !== null).length;
+  const progressPercentage = (answeredCount / assessment.questions.length) * 100;
 
   const handleAnswerSelect = (answer: string) => {
     const newAnswers = [...userAnswers];
@@ -119,17 +122,18 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
     setIsSubmitting(true);
     try {
       // Guests can practice; only authenticated results are persisted.
-      if (currentUserId !== "guestUser") await saveAssessmentResult(result);
-      setAssessmentResult(result);
+      submissionId.current ??= crypto.randomUUID();
+      const savedResult = currentUserId !== "guestUser" ? await saveAssessmentResult(result, submissionId.current) : result;
+      setAssessmentResult(savedResult);
       setIsCompleted(true);
       toast({
         title: "Assessment Submitted!",
-        description: `You scored ${scorePercentage}%.`,
+        description: `You scored ${savedResult.scorePercentage}%.`,
       });
-    } catch {
+    } catch (error) {
       toast({
         title: "Error Submitting",
-        description: "There was an issue submitting your assessment. Please try again.",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -139,6 +143,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
   };
 
   const handleRetakeAssessment = () => {
+    submissionId.current = null;
     setCurrentQuestionIndex(0);
     setUserAnswers(new Array(assessment.questions.length).fill(null));
     setIsCompleted(false);
@@ -167,12 +172,22 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
       </header>
 
       <div className="space-y-2">
-        <Progress value={progressPercentage} className="w-full h-2.5" />
+        <Progress aria-label="Questions answered" value={progressPercentage} className="w-full h-2.5" />
         <p className="text-sm text-muted-foreground text-right">
-          {currentQuestionIndex + 1} / {assessment.questions.length}
+          {answeredCount} of {assessment.questions.length} answered · Question {currentQuestionIndex + 1}
         </p>
       </div>
       
+      <nav aria-label="Question navigator" className="flex flex-wrap gap-2">
+        {assessment.questions.map((question, index) => (
+          <Button key={question.id} size="sm" variant={index === currentQuestionIndex ? "default" : "outline"}
+            disabled={isSubmitting} aria-current={index === currentQuestionIndex ? "step" : undefined}
+            aria-label={`Question ${index + 1}, ${userAnswers[index] === null ? "unanswered" : "answered"}`}
+            onClick={() => setCurrentQuestionIndex(index)}>
+            {index + 1}{userAnswers[index] !== null ? " ✓" : ""}
+          </Button>
+        ))}
+      </nav>
       <AnimatePresence mode="wait" initial={false}>
         <QuestionDisplay
           key={currentQuestion.id} 

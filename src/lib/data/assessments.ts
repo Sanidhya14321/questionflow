@@ -1,4 +1,4 @@
-import type { Assessment, AssessmentCategory, AssessmentResult, Question } from "@/lib/types";
+import type { Assessment, AssessmentSummary, AssessmentCategory, AssessmentResult, Question } from "@/lib/types";
 import { PREDEFINED_ASSESSMENTS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -98,10 +98,15 @@ export async function ensureAssessmentsSeeded(): Promise<void> {
     );
   })();
 
-  return seedPromise;
+  try {
+    await seedPromise;
+  } catch (error) {
+    seedPromise = null;
+    throw error;
+  }
 }
 
-export async function getAllAssessments(userId?: string): Promise<Assessment[]> {
+export async function getAllAssessments(userId?: string): Promise<AssessmentSummary[]> {
   await ensureAssessmentsSeeded();
 
   let completedAssessmentIds: string[] = [];
@@ -115,10 +120,11 @@ export async function getAllAssessments(userId?: string): Promise<Assessment[]> 
   }
 
   const records = await prisma.assessment.findMany({
+    omit: { questions: true },
     where: completedAssessmentIds.length > 0 ? { id: { notIn: completedAssessmentIds } } : undefined,
     orderBy: [{ isPredefined: "desc" }, { createdAt: "desc" }],
   });
-  return records.map(mapRecordToAssessment);
+  return records.map(record => ({ ...record, durationMinutes: record.durationMinutes ?? undefined, createdByRole: record.createdByRole as Assessment["createdByRole"], createdAt: record.createdAt.toISOString() }));
 }
 
 export async function getAssessmentById(id: string): Promise<Assessment | null> {
@@ -181,22 +187,23 @@ export async function getAssessmentStatsByCategory(): Promise<Record<string, num
   }, {});
 }
 
-export async function voteOnAssessment(input: { assessmentId: string; voteType: "up" | "down" }) {
-  const data =
-    input.voteType === "up"
-      ? { upvotes: { increment: 1 } }
-      : { downvotes: { increment: 1 } };
-
-  const record = await prisma.assessment.update({
-    where: { id: input.assessmentId },
-    data,
+export async function voteOnAssessment(input: { assessmentId: string; userId: string; voteType: "up" | "down" }) {
+  return prisma.$transaction(async tx => {
+    // Serialize vote changes for this assessment so counters and unique votes agree.
+    await tx.$queryRaw`SELECT "id" FROM "Assessment" WHERE "id" = ${input.assessmentId} FOR UPDATE`;
+    const existing = await tx.assessmentVote.findUnique({ where: { assessmentId_userId: { assessmentId: input.assessmentId, userId: input.userId } } });
+    if (existing?.voteType !== input.voteType) {
+      await tx.assessmentVote.upsert({
+        where: { assessmentId_userId: { assessmentId: input.assessmentId, userId: input.userId } },
+        create: input, update: { voteType: input.voteType },
+      });
+      await tx.assessment.update({ where: { id: input.assessmentId }, data: {
+        upvotes: { increment: (input.voteType === "up" ? 1 : 0) - (existing?.voteType === "up" ? 1 : 0) },
+        downvotes: { increment: (input.voteType === "down" ? 1 : 0) - (existing?.voteType === "down" ? 1 : 0) },
+      } });
+    }
+    return tx.assessment.findUniqueOrThrow({ where: { id: input.assessmentId }, select: { id: true, upvotes: true, downvotes: true } });
   });
-
-  return {
-    id: record.id,
-    upvotes: record.upvotes,
-    downvotes: record.downvotes,
-  };
 }
 
 export async function saveAssessmentResult(input: AssessmentResult): Promise<void> {

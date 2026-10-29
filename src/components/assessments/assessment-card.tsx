@@ -6,12 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { Assessment } from "@/lib/types";
+import type { AssessmentSummary } from "@/lib/types";
 import { ArrowRight, Brain, Code, Database, Shield, Cloud, Clock, ThumbsUp, ThumbsDown, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface AssessmentCardProps {
-  assessment: Assessment;
+  assessment: AssessmentSummary;
 }
 
 const categoryIcons: { [key: string]: React.ElementType } = {

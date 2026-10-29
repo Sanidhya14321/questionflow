@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { SignJWT, jwtVerify } from "jose";
 import type { NextRequest, NextResponse } from "next/server";
 
@@ -28,13 +29,8 @@ export async function signSession(user: SessionUser) {
 
 export async function verifySession(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, getJwtSecret());
-    return {
-      userId: String(payload.userId),
-      email: String(payload.email),
-      name: String(payload.name),
-      role: payload.role === "admin" ? "admin" : "user",
-    };
+    const { payload } = await jwtVerify(token, getJwtSecret(), { algorithms: ["HS256"] });
+    return z.object({ userId: z.string().min(1), email: z.string().email(), name: z.string().min(1), role: z.enum(["user", "admin"]) }).parse(payload);
   } catch {
     return null;
   }

@@ -131,7 +131,7 @@ export function AddAssessmentForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-lg">Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
                         <SelectContent>
                           {ASSESSMENT_CATEGORIES.map(cat => (
@@ -211,7 +211,7 @@ export function AddAssessmentForm() {
                                   }
                                 }
                               }} 
-                              defaultValue={typeField.value}
+                              value={typeField.value}
                             >
                             <FormControl><SelectTrigger><SelectValue placeholder="Select question type" /></SelectTrigger></FormControl>
                             <SelectContent>
@@ -234,9 +234,9 @@ export function AddAssessmentForm() {
                               name={`questions.${index}.options.${optIndex}`}
                               render={({ field: optField }) => (
                                 <FormItem className="flex items-center gap-2 mb-1">
-                                  <FormControl><Input placeholder={`Option ${optIndex + 1}`} {...optField} /></FormControl>
+                                  <FormControl><Input aria-label={`Question ${index + 1} option ${optIndex + 1}`} placeholder={`Option ${optIndex + 1}`} {...optField} /></FormControl>
                                    {form.getValues(`questions.${index}.options`).length > 2 && (
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => {
+                                    <Button type="button" variant="ghost" size="icon" aria-label={`Remove option ${optIndex + 1}`} onClick={() => {
                                       const currentOptions = form.getValues(`questions.${index}.options`);
                                       currentOptions.splice(optIndex, 1);
                                       form.setValue(`questions.${index}.options`, currentOptions);
@@ -277,7 +277,7 @@ export function AddAssessmentForm() {
                         </FormItem>
                       )}
                     />
-                    <Button type="button" variant="destructive" size="sm" onClick={() => remove(index)} className="absolute top-4 right-4">
+                    <Button type="button" variant="destructive" size="sm" disabled={fields.length === 1} onClick={() => remove(index)} className="absolute top-4 right-4">
                       <Trash2 className="w-4 h-4 mr-1" /> Remove Question
                     </Button>
                   </motion.div>

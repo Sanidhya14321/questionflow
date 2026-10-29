@@ -41,6 +41,8 @@ model AssessmentResult {
   completedAt    DateTime   @default(now())
   createdAt      DateTime   @default(now())
 
+  submissionKey String? @unique
+
   assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -57,4 +59,19 @@ model User {
   updatedAt    DateTime @updatedAt
 
   @@index([role])
+}
+
+model AssessmentVote {
+  id String @id @default(cuid())
+  assessmentId String
+  userId String
+  voteType String
+  @@unique([assessmentId, userId])
+}
+
+model RateLimitBucket {
+  key String @id
+  count Int @default(1)
+  expiresAt DateTime
+  @@index([expiresAt])
 }

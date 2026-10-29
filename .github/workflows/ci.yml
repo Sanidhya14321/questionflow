@@ -3,11 +3,34 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  check:
+  verify:
+    name: Verify application
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: questionflow_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/questionflow_test
+      JWT_SECRET: ci-only-secret-not-for-production-0123456789
+      GROQ_API_KEY: ''
+      TEST_BASE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,9 +38,26 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run prisma:generate
+      - run: npm run verify:env
       - run: npm run check
       - run: npm test
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run db:deploy
       - run: npm run build
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/questionflow
+      - name: Test the production server against PostgreSQL
+        run: |
+          npm start > /tmp/questionflow-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/ready > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:integration
+          SMOKE_BASE_URL=http://127.0.0.1:3000 npm run smoke
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: server-diagnostics
+          path: /tmp/questionflow-server.log
+          retention-days: 3

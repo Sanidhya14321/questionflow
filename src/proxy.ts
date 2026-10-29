@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, verifySession } from "@/lib/auth/session";
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+    const origin = request.headers.get("origin");
+    if (origin && origin !== request.nextUrl.origin) return NextResponse.json({ message: "Cross-origin requests are not allowed." }, { status: 403 });
+  }
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
-  const { pathname } = request.nextUrl;
 
   const isAdminArea = pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
   const isProfileArea = pathname.startsWith("/profile");
@@ -29,5 +33,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/admin/:path*", "/api/admin/:path*", "/assessments/create"],
+  matcher: ["/api/:path*", "/profile/:path*", "/admin/:path*", "/api/admin/:path*", "/assessments/create"],
 };

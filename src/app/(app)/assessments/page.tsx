@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { AssessmentCard } from "@/components/assessments/assessment-card";
 import { AssessmentCategoryFilter } from "@/components/assessments/assessment-category-filter";
-import type { Assessment } from "@/lib/types";
+import type { AssessmentSummary } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Loader2, Search, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,8 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 export default function AssessmentsPage() {
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,7 +36,7 @@ export default function AssessmentsPage() {
         setLoadError(false);
         const response = await fetch("/api/assessments", { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Failed to load assessments");
-        const data: Assessment[] = await response.json();
+        const data: AssessmentSummary[] = await response.json();
         setAssessments(data);
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -51,7 +52,7 @@ export default function AssessmentsPage() {
     return () => controller.abort();
   }, [retryCount]);
 
-  const applyFilters = useCallback((source: Assessment[]) => {
+  const applyFilters = useCallback((source: AssessmentSummary[]) => {
     return source.filter((assessment) => {
       const categoryMatch = selectedCategory ? assessment.category === selectedCategory : true;
       const searchTermMatch = searchTerm
@@ -59,8 +60,8 @@ export default function AssessmentsPage() {
           assessment.description.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
       return categoryMatch && searchTermMatch;
-    });
-  }, [selectedCategory, searchTerm]);
+    }).sort((a, b) => sortBy === "popular" ? (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes) : sortBy === "shortest" ? (a.durationMinutes ?? 999) - (b.durationMinutes ?? 999) : Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  }, [selectedCategory, searchTerm, sortBy]);
 
   const adminAssessments = useMemo(() => {
     const source = assessments.filter((assessment) => assessment.createdByRole === "admin" || assessment.isPredefined);
@@ -103,7 +104,7 @@ export default function AssessmentsPage() {
         };
         throw new Error(payload.message ?? "Failed to generate assessment");
       }
-      const generated: Assessment = await response.json();
+      const generated: AssessmentSummary = await response.json();
       setAssessments((prev) => [generated, ...prev]);
       setSearchTerm("");
       setSelectedCategory(null);
@@ -166,6 +167,13 @@ export default function AssessmentsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p role="status" className="text-sm text-muted-foreground">{adminAssessments.length + userAssessments.length + aiAssessments.length} assessments match your filters</p>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger aria-label="Sort assessments" className="w-48"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="newest">Newest first</SelectItem><SelectItem value="popular">Most popular</SelectItem><SelectItem value="shortest">Shortest first</SelectItem></SelectContent>
+        </Select>
+      </div>
       <AssessmentCategoryFilter
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}

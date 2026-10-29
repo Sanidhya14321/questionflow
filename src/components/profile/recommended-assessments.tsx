@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { User, AssessmentResult, AvailableAssessmentInfo, UserHistoryEntry, Assessment } from "@/lib/types";
+import type { User, AssessmentResult, AvailableAssessmentInfo, UserHistoryEntry, AssessmentSummary } from "@/lib/types";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Brain, Lightbulb } from "lucide-react";
@@ -10,10 +10,10 @@ import Image from "next/image";
 
 interface RecommendedAssessmentsProps {
   user: User | null;
-  assessments: Assessment[];
+  assessments: AssessmentSummary[];
 }
 
-const findAssessmentByTitle = (assessments: Assessment[], title: string) => {
+const findAssessmentByTitle = (assessments: AssessmentSummary[], title: string) => {
   return assessments.find((a) => a.title.toLowerCase() === title.toLowerCase());
 };
 

@@ -4,16 +4,20 @@
 
 QuestionFlow keeps its neo-brutalist identity: bold typography, thick borders, offset shadows, bright colors, and light, dark, and high-contrast themes.
 
+[Live app](https://questionflow-sanidhya.vercel.app) · [Release pipeline and recovery](docs/RELEASE.md)
+
 ## Features
 
-- **Assessment library:** curated, community, and AI tabs with search and category filters.
+- **Assessment library:** curated, community, and AI tabs with search, category filters, sorting, and lightweight summaries; full questions load only when opening an assessment.
 - **Interactive practice:** animated questions, keyboard-accessible choices, progress tracking, instant scores, answer review, and retakes. Guests can practice; signed-in users save their results.
 - **Authoring:** create multiple-choice and true/false assessments; administrators get a category overview and user statistics.
 - **AI tools:** generate assessments by topic, difficulty, and question count; get personalized recommendations through Groq.
 - **Profiles:** assessment history and perfect-score badges.
 - **Authentication:** hashed passwords, signed HTTP-only session cookies, and role-protected routes.
 - **Accessible motion:** system reduced-motion support, focused question headings, responsive controls, and explicit retry and submission states.
-- **Reliable results:** saved scores are recalculated against stored questions on the server.
+- **Reliable results:** scores are recalculated on the server and submission UUIDs prevent duplicate history on retries.
+- **Safer APIs:** persisted request limits, bounded JSON bodies, shared question validation, same-origin mutations, and sanitized error responses.
+- **Study workflow:** jump between questions, see answered progress, sort the catalog, and recover from profile loading failures.
 
 ## Stack
 
@@ -57,11 +61,12 @@ npm run dev
 
 Open [localhost:9002](http://localhost:9002). The seed command requires both administrator variables and updates the administrator password when rerun. Normal user authentication also works without configuring an administrator.
 
-Without a Groq key, the core assessment flows work; AI generation needs a valid key and recommendations return an empty list.
+Without a Groq key, the core assessment flows work; AI generation needs a valid key and recommendations use a catalog-based fallback. Invalid generated content is rejected instead of replaced with placeholder questions.
 
 ## Development and checks
 
 ```bash
+npm run verify:env    # Validate required runtime configuration
 npm run check         # ESLint and TypeScript
 npm test              # Server grading regression tests
 npm run build         # Production build, including type validation
@@ -69,7 +74,7 @@ npm start             # Production server on port 3000
 npm run prisma:studio # Browse the local database
 ```
 
-GitHub Actions runs install, client generation, lint, types, tests, and build on pushes to `main` and pull requests. Database-backed flows need a configured database; AI integration needs a valid provider key.
+GitHub Actions validates the environment, lints, checks types, runs tests and a production dependency audit, migrates a disposable PostgreSQL database, builds once, and exercises the running production server. Vercel waits for the **Verify application** check before assigning production domains. See [release procedure and recovery](docs/RELEASE.md).
 
 ## Docker
 
@@ -116,4 +121,4 @@ The app lives directly at the repository root; no extra `cd assessment-app` is n
 
 ## Scope
 
-QuestionFlow is a learning and practice platform. Terminal-based coding assessments remain planned. Correct answers are available to the practice interface, and community votes currently count each accepted request rather than enforcing one vote per person.
+QuestionFlow is a learning and practice platform. Terminal-based coding assessments remain planned. Correct answers are available to the practice interface, and community votes enforce one vote per signed-in user and assessment.
