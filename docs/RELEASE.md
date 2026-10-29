@@ -27,7 +27,7 @@ The October 2026 migration only adds nullable submission identifiers and new vot
 
 - GitHub: `Sanidhya14321/questionflow`
 - Vercel project: `questionflow`
-- Production: `https://questionflow-sanidhya.vercel.app`
+- Production: `https://questionflow.vercel.app`
 - Root Directory: repository root (empty in Vercel), **not** `assessment-app`
 - Node: `24.x`
 - Install: `npm ci --include=dev` (TypeScript build tools are needed even when Vercel sets `NODE_ENV=production`)
@@ -41,7 +41,7 @@ The October 2026 migration only adds nullable submission identifiers and new vot
 `GET /api/health` proves the process responds. `GET /api/ready` additionally verifies the migrated database tables and session configuration; it returns 503 without internal database details when unavailable. It reports only whether AI is configured, not provider reachability or key validity.
 
 ```bash
-SMOKE_BASE_URL=https://questionflow-sanidhya.vercel.app npm run smoke
+SMOKE_BASE_URL=https://questionflow.vercel.app npm run smoke
 ```
 
 Smoke is read-only. Full integration tests create disposable local data and clean up their users, results and assessments; run those against localhost with a dedicated test database only.

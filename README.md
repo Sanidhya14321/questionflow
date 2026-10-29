@@ -4,7 +4,7 @@
 
 QuestionFlow keeps its neo-brutalist identity: bold typography, thick borders, offset shadows, bright colors, and light, dark, and high-contrast themes.
 
-[Live app](https://questionflow-sanidhya.vercel.app) · [Release pipeline and recovery](docs/RELEASE.md)
+[Live app](https://questionflow.vercel.app) · [Release pipeline and recovery](docs/RELEASE.md)
 
 ## Features
 
