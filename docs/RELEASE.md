@@ -30,7 +30,7 @@ The October 2026 migration only adds nullable submission identifiers and new vot
 - Production: `https://questionflow-sanidhya.vercel.app`
 - Root Directory: repository root (empty in Vercel), **not** `assessment-app`
 - Node: `24.x`
-- Install: `npm ci`
+- Install: `npm ci --include=dev` (TypeScript build tools are needed even when Vercel sets `NODE_ENV=production`)
 - Build: `npm run verify:env && npm run build`
 - Required: `DATABASE_URL`, `JWT_SECRET` (32+ characters)
 - Optional: `GROQ_API_KEY`; generation is explicitly unavailable without it. `GROQ_MODEL` defaults to `openai/gpt-oss-120b`; check provider model availability before changing it.
@@ -49,6 +49,7 @@ Smoke is read-only. Full integration tests create disposable local data and clea
 ## Failure and recovery
 
 - **Missing root directory:** clear Vercel Root Directory and redeploy the same Git commit.
+- **Build cannot find `@types/node` or TypeScript:** retain `--include=dev` in the install command; production runtime mode must not prune build-time tools.
 - **Prisma client missing/stale:** install/build scripts both regenerate it; do not override the configured build command.
 - **503 readiness:** verify runtime configuration, database availability and committed migrations. The readiness response deliberately excludes connection strings and raw errors.
 - **CI failed:** fix the failing gate before retrying a release. Do not bypass the production check.
