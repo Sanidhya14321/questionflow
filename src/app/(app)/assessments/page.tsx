@@ -147,14 +147,14 @@ export default function AssessmentsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-4xl font-headline font-bold text-primary mb-4">Explore Assessments</h1>
-        <p className="text-xl text-muted-foreground">
-          Admin-made, user-made, and AI-generated assessments in one place.
-        </p>
+        <div className="catalog-intro">
+          <div><h1 className="catalog-title">FIND YOUR<br /><span>NEXT AHA.</span></h1></div>
+          <p>Curated challenges. Community ideas. AI-assisted discovery. Pick a subject and see what clicks.</p>
+        </div>
       </motion.div>
 
       <div className="flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative w-full md:flex-grow">
+        <div className="relative w-full md:flex-grow catalog-search">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="text"
@@ -181,7 +181,7 @@ export default function AssessmentsPage() {
       />
 
       <Tabs defaultValue="admin" className="w-full">
-        <TabsList className="w-full md:w-auto h-auto flex flex-wrap gap-2">
+        <TabsList className="catalog-tabs w-full md:w-auto h-auto flex flex-wrap gap-2">
           <TabsTrigger value="admin">Admin Made Assessments</TabsTrigger>
           <TabsTrigger value="user">User Made Assessments</TabsTrigger>
           <TabsTrigger value="ai">AI Based Assessments</TabsTrigger>
@@ -199,7 +199,7 @@ export default function AssessmentsPage() {
               </AnimatePresence>
             </motion.div>
           ) : (
-            <div className="text-center py-10 text-muted-foreground">No admin-made assessments found.</div>
+            <div className="text-center py-10 text-muted-foreground">Nothing here just yet. Try a different search or category.</div>
           )}
         </TabsContent>
 
@@ -215,7 +215,7 @@ export default function AssessmentsPage() {
               </AnimatePresence>
             </motion.div>
           ) : (
-            <div className="text-center py-10 text-muted-foreground">No user-made assessments found yet.</div>
+            <div className="text-center py-10 text-muted-foreground">No community assessments match. Change your filters or create the first one.</div>
           )}
         </TabsContent>
 

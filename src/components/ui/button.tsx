@@ -5,17 +5,17 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[6px] border-[3px] border-black text-sm font-extrabold uppercase tracking-wide ring-offset-background transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:translate-x-[2px] active:translate-y-[2px] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[6px] border-[3px] border-black text-sm font-extrabold uppercase tracking-wide ring-offset-background transition-[transform,box-shadow,background-color,color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:translate-x-[2px] active:translate-y-[2px] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-[4px_4px_0_0_#000] hover:brightness-95",
+        default: "bg-primary text-primary-foreground shadow-[4px_4px_0_0_#000] hover:brightness-95 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#000]",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-[4px_4px_0_0_#000] hover:brightness-95",
+          "bg-destructive text-destructive-foreground shadow-[4px_4px_0_0_#000] hover:brightness-95 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#000]",
         outline:
-          "bg-card text-card-foreground shadow-[4px_4px_0_0_#000] hover:bg-accent",
+          "bg-card text-card-foreground shadow-[4px_4px_0_0_#000] hover:bg-accent hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#000]",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-[4px_4px_0_0_#000] hover:brightness-95",
+          "bg-secondary text-secondary-foreground shadow-[4px_4px_0_0_#000] hover:brightness-95 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#000]",
         ghost: "bg-transparent border-transparent shadow-none hover:bg-accent hover:border-black hover:shadow-[4px_4px_0_0_#000]",
         link: "border-none bg-transparent p-0 h-auto shadow-none text-primary underline-offset-4 hover:underline",
       },

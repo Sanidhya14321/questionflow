@@ -7,8 +7,8 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { AssessmentSummary } from "@/lib/types";
-import { ArrowRight, Brain, Code, Database, Shield, Cloud, Clock, ThumbsUp, ThumbsDown, CheckCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowUpRight, Brain, Code, Database, Shield, Cloud, Clock, ThumbsUp, ThumbsDown } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface AssessmentCardProps {
   assessment: AssessmentSummary;
@@ -23,6 +23,7 @@ const categoryIcons: { [key: string]: React.ElementType } = {
 };
 
 export function AssessmentCard({ assessment }: AssessmentCardProps) {
+  const reduced = useReducedMotion();
   const { toast } = useToast();
   const [isVoting, setIsVoting] = useState(false);
   const IconComponent = categoryIcons[assessment.category] || Code;
@@ -64,62 +65,34 @@ export function AssessmentCard({ assessment }: AssessmentCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: reduced ? 0 : 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -4 }}
+      transition={{ duration: reduced ? 0 : 0.35 }}
+      whileHover={reduced ? undefined : { y: -5 }}
       className="h-full"
     >
-      <Card className="flex flex-col h-full overflow-hidden transition-shadow duration-300 hover:shadow-xl bg-card">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-sm text-primary">
-              <IconComponent className="w-5 h-5" />
-              <span>{assessment.category}</span>
-            </div>
-            {assessment.isPredefined && (
-              <div className="flex items-center text-xs text-green-600 dark:text-green-400">
-                <CheckCircle className="w-4 h-4 mr-1" />
-                <span>Curated</span>
-              </div>
-            )}
-            {assessment.durationMinutes && !assessment.isPredefined && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Clock className="w-4 h-4 mr-1" />
-                {assessment.durationMinutes} min
-              </div>
-            )}
+      <Card className="assessment-tile group flex flex-col h-full overflow-hidden bg-card">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div className="assessment-icon"><IconComponent className="w-6 h-6" /></div>
+            <span className="micro-label text-muted-foreground">{assessment.isPredefined ? "CURATED" : assessment.isAIGenerated ? "AI ASSISTED" : "COMMUNITY"}</span>
           </div>
-          <CardTitle className="font-headline text-xl leading-tight">{assessment.title}</CardTitle>
+          <p className="micro-label text-primary mb-2">{assessment.category}</p>
+          <CardTitle className="assessment-title">{assessment.title}</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow">
-          <CardDescription className="text-muted-foreground line-clamp-3">{assessment.description}</CardDescription>
+        <CardContent className="flex-grow pb-6">
+          <CardDescription className="text-muted-foreground text-sm leading-relaxed line-clamp-3">{assessment.description}</CardDescription>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t">
+        <CardFooter className="tile-footer flex flex-wrap gap-3 justify-between items-center border-t">
           {assessment.isPredefined ? (
-             <div className="flex items-center gap-2 mb-3 sm:mb-0 text-sm text-muted-foreground">
-                {assessment.durationMinutes && (
-                    <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1" />
-                        {assessment.durationMinutes} min
-                    </div>
-                )}
-             </div>
+            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Clock size={14} />{assessment.durationMinutes ? `${assessment.durationMinutes} MIN` : "SELF PACED"}</span>
           ) : (
-            <div className="flex items-center gap-2 mb-3 sm:mb-0">
-              <Button variant="ghost" size="sm" disabled={isVoting} aria-label={`Upvote ${assessment.title}: ${upvotes} votes`} onClick={handleUpvote} className="group text-muted-foreground hover:text-green-500">
-                <ThumbsUp className="w-4 h-4 mr-1 group-hover:fill-green-500/20" /> {upvotes}
-              </Button>
-              <Button variant="ghost" size="sm" disabled={isVoting} aria-label={`Downvote ${assessment.title}: ${downvotes} votes`} onClick={handleDownvote} className="group text-muted-foreground hover:text-red-500">
-                <ThumbsDown className="w-4 h-4 mr-1 group-hover:fill-red-500/20" /> {downvotes}
-              </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" disabled={isVoting} aria-label={`Upvote ${assessment.title}: ${upvotes} votes`} onClick={handleUpvote} className="px-2 text-muted-foreground"><ThumbsUp size={14} /> {upvotes}</Button>
+              <Button variant="ghost" size="sm" disabled={isVoting} aria-label={`Downvote ${assessment.title}: ${downvotes} votes`} onClick={handleDownvote} className="px-2 text-muted-foreground"><ThumbsDown size={14} /> {downvotes}</Button>
             </div>
           )}
-          <Link href={`/assessments/${assessment.id}`} className="w-full sm:w-auto">
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-              Start Assessment <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+          <Link href={`/assessments/${assessment.id}`} aria-label={`Start ${assessment.title}`} className="tile-start">LET’S GO <ArrowUpRight size={18} /></Link>
         </CardFooter>
       </Card>
     </motion.div>

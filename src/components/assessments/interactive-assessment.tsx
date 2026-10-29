@@ -117,7 +117,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
       answers: mappedAnswers,
       completedAt: new Date().toISOString(),
     };
-    
+
     submissionLock.current = true;
     setIsSubmitting(true);
     try {
@@ -161,13 +161,14 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-3xl mx-auto space-y-8"
+      className="assessment-workspace max-w-3xl mx-auto space-y-8"
     >
-      <header className="text-center">
-        <h1 className="text-3xl font-headline font-bold text-primary">{assessment.title}</h1>
+      <header className="text-left">
+
+        <h1 className="text-3xl sm:text-4xl font-headline tracking-tight text-primary mb-3">{assessment.title}</h1>
         <p className="text-muted-foreground">{assessment.description}</p>
       </header>
 
@@ -177,7 +178,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
           {answeredCount} of {assessment.questions.length} answered · Question {currentQuestionIndex + 1}
         </p>
       </div>
-      
+
       <nav aria-label="Question navigator" className="flex flex-wrap gap-2">
         {assessment.questions.map((question, index) => (
           <Button key={question.id} size="sm" variant={index === currentQuestionIndex ? "default" : "outline"}
@@ -190,7 +191,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
       </nav>
       <AnimatePresence mode="wait" initial={false}>
         <QuestionDisplay
-          key={currentQuestion.id} 
+          key={currentQuestion.id}
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={assessment.questions.length}
@@ -208,7 +209,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Previous
         </Button>
-        
+
         {currentQuestionIndex === assessment.questions.length - 1 ? (
           <Button
             onClick={handleSubmitAssessment}

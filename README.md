@@ -19,6 +19,10 @@ QuestionFlow keeps its neo-brutalist identity: bold typography, thick borders, o
 - **Safer APIs:** persisted request limits, bounded JSON bodies, shared question validation, same-origin mutations, and sanitized error responses.
 - **Study workflow:** jump between questions, see answered progress, sort the catalog, and recover from profile loading failures.
 
+## Interface and motion
+
+The editorial interface keeps the original QuestionFlow palette, Bungee headings, Space Grotesk copy, bold borders, and offset shadows. It adds a playable three-question landing-page preview, subject navigation, illustrated learning steps, refined assessment cards, animated navigation, and responsive layouts. The preview is browser-local and does not save assessment results. Decorative motion can be paused; the interface also respects system reduced-motion preferences.
+
 ## Stack
 
 Next.js 16 App Router · React 19 · TypeScript · Tailwind CSS 3 · Radix UI · Framer Motion 12 · Prisma 6 · PostgreSQL · Groq SDK · Zod

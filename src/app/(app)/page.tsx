@@ -1,185 +1,72 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect, useRef } from "react";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+import { Pause, Play, ArrowDown, ArrowRight, ArrowUpRight, Asterisk, Brain, Check, Code2, Database, ShieldCheck, Cloud, ScanLine, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { ArrowRight, BarChart3, Brain, Lightbulb, UserCheck, ShieldCheck, TerminalSquare } from "lucide-react";
-import Image from "next/image";
+import { Reveal } from "@/components/ui/reveal";
+import { QuizPlayground } from "@/components/home/quiz-playground";
 
-const FeatureCard = ({ icon: Icon, title, description, delay }: { icon: React.ElementType, title: string, description: string, delay: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 50 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.2 }}
-    transition={{ duration: 0.4, delay: delay * 0.25 }}
-  >
-    <Card className="h-full hover:shadow-primary/20 hover:shadow-lg transition-shadow duration-300">
-      <CardHeader className="flex flex-row items-center gap-4 pb-2">
-        <Icon className="w-10 h-10 text-primary" />
-        <CardTitle className="font-headline text-xl">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+const disciplines = [
+  { name: "Web development", note: "From your first tag to your next big idea.", icon: Code2, href: "/assessments/web-dev-fundamentals", className: "subject-blue", number: "01" },
+  { name: "AI & machine learning", note: "Make sense of the intelligence behind it all.", icon: Brain, href: "/assessments/intro-to-aiml", className: "subject-pink", number: "02" },
+  { name: "Data structures", note: "Build a better way to think through problems.", icon: Database, href: "/assessments/data-structures-advanced", className: "subject-green", number: "03" },
+  { name: "Cybersecurity", note: "Get curious about keeping things secure.", icon: ShieldCheck, href: "/assessments/cybersecurity-essentials", className: "subject-blue", number: "04" },
+  { name: "Cloud computing", note: "A whole new perspective. No altitude required.", icon: Cloud, href: "/assessments/cloud-computing-fundamentals", className: "subject-pink", number: "05" },
+];
 
 export default function HomePage() {
+  const reduced = useReducedMotion();
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const marqueeVisible = useInView(marqueeRef);
+  const [pageVisible, setPageVisible] = useState(true);
+  useEffect(() => {
+    const updateVisibility = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+  const [motionPaused, setMotionPaused] = useState(false);
   return (
-    <div className="space-y-16">
-      {/* Hero Section */}
-      <motion.section
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
-        className="text-center py-16 md:py-24 bg-gradient-to-b from-background to-card rounded-xl shadow-xl"
-      >
-        <div className="container mx-auto px-4">
-          <motion.h1 
-            className="text-3xl sm:text-5xl md:text-7xl break-words font-headline font-extrabold mb-6"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Welcome to <span className="text-primary">QuestionFlow</span>
-          </motion.h1>
-          <motion.p 
-            className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            Design. Deliver. Analyze. Host assessments, run skill checks, and review deep performance insights.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="flex flex-wrap justify-center gap-4"
-          >
-            <Link href="/assessments">
-              <Button size="lg" className="text-sm sm:text-lg px-4 sm:px-8 py-6 bg-primary hover:bg-primary/90 text-primary-foreground">
-                Explore Assessments <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/assessments/create">
-              <Button size="lg" variant="outline" className="text-sm sm:text-lg px-4 sm:px-8 py-6">
-                Host An Assessment
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </motion.section>
+    <div className={`landing-page ${motionPaused ? "motion-paused" : ""}`}>
+      <section className="hero-section" aria-labelledby="hero-title">
 
-      <section className="py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <TerminalSquare className="w-6 h-6" /> Upcoming Features
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Terminal-based coding test and analysis is planned and will be integrated as a future release.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-12">
-        <h2 className="text-4xl font-headline font-bold text-center mb-12">
-          Why Choose <span className="text-primary">QuestionFlow</span>?
-        </h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <FeatureCard
-            icon={Lightbulb}
-            title="Diverse Assessments"
-            description="Explore a wide range of assessments in AI/ML, Web Development, Data Structures, and more."
-            delay={0.2}
-          />
-          <FeatureCard
-            icon={BarChart3}
-            title="Instant Feedback"
-            description="Receive immediate, percentage-based results after each assessment to track your learning."
-            delay={0.4}
-          />
-          <FeatureCard
-            icon={UserCheck}
-            title="Personalized Profile"
-            description="Maintain a user profile with your assessment history and achievements."
-            delay={0.6}
-          />
-           <FeatureCard
-            icon={Brain}
-            title="AI Recommendations"
-            description="Get intelligent suggestions for new assessments based on your performance and interests."
-            delay={0.8}
-          />
-           <FeatureCard
-            icon={ArrowRight}
-            title="Interactive Learning"
-            description="Engage with dynamic questions and an intuitive interface designed for optimal learning."
-            delay={1.0}
-          />
-           <FeatureCard
-            icon={ShieldCheck} 
-            title="Quality Content"
-            description="Assessments crafted to test practical knowledge and conceptual understanding."
-            delay={1.2}
-          />
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <motion.h1 id="hero-title" className="hero-title" initial={{ opacity: 0, y: reduced ? 0 : 35 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] }}>
+              SMALL<br />QUESTIONS.<br /><span className="hero-title-color">BIG <Asterisk className="hero-asterisk" aria-hidden="true" /></span><span className="hero-last-line">BREAKTHROUGHS.</span>
+            </motion.h1>
+            <Reveal delay={0.1}><p className="hero-description">Turn <span className="underline-marker">“I think I know”</span> into “I’ve got this.” Explore computer science, test your instincts, and find your next aha moment.</p></Reveal>
+            <Reveal delay={0.2}><div className="hero-actions"><Button asChild size="lg" className="hero-primary"><Link href="/assessments">Find your challenge <ArrowUpRight /></Link></Button><Link href="/assessments/create" className="text-link">Create an assessment <ArrowRight size={17} /></Link></div></Reveal>
+            <div className="hero-footnote"><span>BUILT FOR CURIOUS MINDS.</span><a href="#discover" aria-label="Discover the subjects" className="scroll-cue"><ArrowDown size={16} /></a></div>
+          </div>
+          <motion.div className="hero-lab" initial={{ opacity: 0, y: reduced ? 0 : 40, rotate: reduced ? 0 : 3 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: reduced ? 0 : 0.85, delay: reduced ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}><QuizPlayground /></motion.div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-12 bg-card rounded-xl shadow-lg overflow-hidden">
-        <h2 className="text-4xl font-headline font-bold text-center mb-12 text-primary">How It Works</h2>
-        <div className="grid md:grid-cols-3 gap-8 text-center">
-          <motion.div initial={{opacity: 0, x: -50}} whileInView={{opacity:1, x:0}} transition={{duration:0.5, delay: 0.2}} viewport={{ once: true }}>
-            <Image src="/1.png" alt="Browse Assessments" width={300} height={200} className="mx-auto mb-4 rounded-lg shadow-md" data-ai-hint="browsing online courses" />
-            <h3 className="text-2xl font-headline font-semibold mb-2">1. Browse & Select</h3>
-            <p className="text-muted-foreground">Choose an assessment from various CS categories.</p>
-          </motion.div>
-          <motion.div initial={{opacity: 0, y: 50}} whileInView={{opacity:1, y:0}} transition={{duration:0.5, delay: 0.4}} viewport={{ once: true }}>
-            <Image src="/2.png" alt="Take Assessment" width={300} height={200} className="mx-auto mb-4 rounded-lg shadow-md" data-ai-hint="online test taking" />
-            <h3 className="text-2xl font-headline font-semibold mb-2">2. Take the Test</h3>
-            <p className="text-muted-foreground">Answer questions in our interactive environment.</p>
-          </motion.div>
-          <motion.div initial={{opacity: 0, x: 50}} whileInView={{opacity:1, x:0}} transition={{duration:0.5, delay: 0.6}} viewport={{ once: true }}>
-            <Image src="/3.png" alt="View Results" width={300} height={200} className="mx-auto mb-4 rounded-lg shadow-md" data-ai-hint="dashboard analytics results" />
-            <h3 className="text-2xl font-headline font-semibold mb-2">3. Get Results</h3>
-            <p className="text-muted-foreground">See your score instantly and review performance.</p>
-          </motion.div>
+      <div ref={marqueeRef} style={{ animationPlayState: marqueeVisible && pageVisible && !motionPaused ? "running" : "paused" }} className="subject-marquee" aria-label="Explore web development, artificial intelligence, data structures, cybersecurity and cloud computing"><div className="marquee-track" aria-hidden="true">{[0, 1].map(copy => <div className="marquee-copy" key={copy}>{["STAY CURIOUS", "THINK BIGGER", "BUILD CONFIDENCE", "FIND YOUR FLOW"].map(item => <span key={item}>{item}<Asterisk /></span>)}</div>)}</div><button className="marquee-toggle" aria-label={motionPaused ? "Resume decorative animations" : "Pause decorative animations"} aria-pressed={motionPaused} onClick={() => setMotionPaused(value => !value)}>{motionPaused ? <Play size={15} /> : <Pause size={15} />}</button></div>
+
+      <section id="discover" className="discovery-section" aria-labelledby="discover-title">
+        <Reveal><div className="section-heading"><div><h2 id="discover-title" className="section-title">Pick a rabbit hole.</h2></div><p className="section-description">Five core disciplines.<br />Plenty of room to surprise yourself.</p></div></Reveal>
+        <div className="subject-list">{disciplines.map(({ icon: Icon, ...subject }, index) => <Reveal key={subject.number} delay={index * 0.035}><Link href={subject.href} className={`subject-row ${subject.className}`}><span className="subject-number">{subject.number}</span><div className="subject-name"><Icon aria-hidden="true" /><h3>{subject.name}</h3></div><p>{subject.note}</p><span className="subject-arrow"><ArrowUpRight aria-hidden="true" /></span></Link></Reveal>)}</div>
+        <Reveal><Link href="/assessments" className="text-link mt-7">Or explore the entire collection <ArrowRight size={18} /></Link></Reveal>
+      </section>
+
+      <section className="process-section" aria-labelledby="process-title">
+        <Reveal><div className="section-heading"><div><h2 id="process-title" className="section-title">Less guessing.<br />More growing.</h2></div><p className="section-description">A good question changes how you think.<br />Here’s where it takes you.</p></div></Reveal>
+        <div className="process-grid">
+          <Reveal className="process-card process-card-first"><div className="process-card-top"><span className="micro-label">01 — DISCOVER</span><ScanLine size={22} /></div><div className="discovery-art" aria-hidden="true"><span className="art-tag">&lt;/&gt; WEB</span><span className="art-tag">✳ AI / ML</span><span className="art-tag">[ ] DATA</span><span className="art-selector">YOUR NEXT CHALLENGE <ArrowUpRight size={17} /></span></div><h3>Find your starting point.</h3><p>Follow an interest. Revisit a blind spot. Choose a challenge that meets you where you are.</p></Reveal>
+          <Reveal className="process-card process-card-second" delay={0.08}><div className="process-card-top"><span className="micro-label">02 — CHALLENGE</span><Target size={22} /></div><div className="challenge-art" aria-hidden="true"><span className="art-check"><Check size={46} strokeWidth={3} /></span><span className="art-ring ring-one" /><span className="art-ring ring-two" /><span className="art-small-label">ONE QUESTION AT A TIME.</span></div><h3>Make your move.</h3><p>Think it through, pick your answer, and keep going. Your progress stays in sight.</p></Reveal>
+          <Reveal className="process-card process-card-third" delay={0.16}><div className="process-card-top"><span className="micro-label">03 — GROW</span><TrendingUp size={22} /></div><div className="growth-art" aria-hidden="true">{[35, 55, 45, 75, 95].map((height, i) => <span key={i} style={{ height: `${height}%` }} />)}<ArrowUpRight className="art-growth-arrow" /></div><h3>Connect the dots.</h3><p>Review every answer, spot your strengths, and turn feedback into your next step.</p></Reveal>
         </div>
       </section>
 
-      {/* Call to Action Section */}
-      <motion.section 
-        className="py-16 text-center"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true }}
-      >
-        <h2 className="text-4xl font-headline font-bold mb-6">Ready to Test Your Knowledge?</h2>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-          Sign up today and start your journey to mastering Computer Science concepts.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4">
-          <Link href="/signup">
-            <Button size="lg" className="text-sm sm:text-lg px-4 sm:px-8 py-6 bg-primary hover:bg-primary/90 text-primary-foreground">
-              Get Started
-            </Button>
-          </Link>
-          <Link href="/assessments">
-            <Button size="lg" variant="outline" className="text-sm sm:text-lg px-4 sm:px-8 py-6 border-primary text-primary hover:bg-primary/5">
-              View Assessments
-            </Button>
-          </Link>
-        </div>
-      </motion.section>
+      <section className="creator-section" aria-labelledby="creator-title">
+        <Reveal className="creator-art" ><div className="creator-paper"><span className="micro-label">IDEA → ASSESSMENT</span><div className="paper-line" /><div className="paper-line short" /><div className="paper-answer"><Check size={19} /> A QUESTION WORTH ASKING</div><div className="paper-line" /><Asterisk className="paper-spark" aria-hidden="true" /></div><div className="creator-stamp"><Sparkles size={22} /><span>YOUR IDEAS.<br />TAKE FLIGHT.</span></div></Reveal>
+        <Reveal className="creator-copy"><h2 id="creator-title" className="section-title">Great questions<br />start with you.</h2><p>Got something worth testing? Build an assessment for your community, or let AI help turn a topic into a fresh set of questions.</p><Button asChild size="lg"><Link href="/assessments/create">Make something challenging <ArrowUpRight /></Link></Button><span className="creator-note">Curated. Community-made. AI-assisted.</span></Reveal>
+      </section>
+
+      <Reveal><section className="final-cta" aria-labelledby="cta-title"><h2 id="cta-title">GET INTO<br /><span>YOUR FLOW.</span><Asterisk aria-hidden="true" className="cta-asterisk" /></h2><div className="cta-bottom"><p>Bring your curiosity.<br />We’ll bring the questions.</p><Button asChild size="lg" className="cta-button"><Link href="/assessments">Let’s do this <ArrowUpRight /></Link></Button></div></section></Reveal>
     </div>
   );
 }

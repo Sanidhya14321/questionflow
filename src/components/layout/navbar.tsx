@@ -2,8 +2,9 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion, useScroll, useSpring, useReducedMotion } from "framer-motion";
 import { Menu, X, Home, BookOpenCheck, UserCircle, ShieldCheck, LogIn, UserPlus, LogOut, PlusSquare, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { NAV_LINKS } from "@/lib/constants";
 import { usePathname, useRouter } from "next/navigation";
@@ -55,6 +56,10 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 export function Navbar() {
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 180, damping: 30 });
+  const reduced = useReducedMotion();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated, role } = useAuth(pathname);
@@ -99,42 +104,45 @@ export function Navbar() {
     return true;
   });
 
+  const activeHref = filteredNavLinks.filter(link => pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"))).sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
-    <nav className="bg-card border-b-[3px] border-black sticky top-0 z-50 shadow-[0_3px_0_0_#000]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+    <nav aria-label="Main navigation" onKeyDown={event => { if (event.key === "Escape") { closeMobileMenu(); menuTrigger.current?.focus(); } }} className="site-nav bg-card border-b-[3px] border-black sticky top-0 z-50">
+      <div className="site-nav-inner mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="flex items-center justify-between gap-5 h-20">
           <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl sm:text-3xl font-headline font-bold text-primary">
+            <Link href="/" className="text-[23px] sm:text-[26px] font-headline tracking-[-0.04em] text-primary">
               QuestionFlow
             </Link>
-            <p className="hidden lg:flex items-center text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground mt-1">
+            <p className="hidden 2xl:flex items-center text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground mt-1">
               <Sparkles className="w-3 h-3 mr-1" /> Design. Deliver. Analyze.
             </p>
           </div>
 
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden xl:flex items-center gap-1">
             {filteredNavLinks.map((link) => {
               const IconComponent = iconMap[link.icon];
-              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+              const isActive = activeHref === link.href;
               return (
                 <Link
                   key={link.label}
                   href={link.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "inline-flex items-center px-3 py-2 rounded-[6px] text-sm font-bold uppercase tracking-wide transition-colors duration-150 ease-in-out border-[2px] border-transparent",
+                    "nav-item relative inline-flex items-center px-3 py-2.5 rounded-[5px] text-[11px] font-bold uppercase tracking-wide transition-colors border-[2px] border-transparent",
                     isActive
                       ? "bg-primary text-primary-foreground border-black shadow-[3px_3px_0_0_#000]"
                       : "text-foreground hover:bg-secondary hover:border-black"
                   )}
                 >
-                  {IconComponent && <IconComponent className="w-5 h-5 mr-2" />}
+                  {IconComponent && <IconComponent className="w-4 h-4 mr-2" />}
                   {link.label}
                 </Link>
               );
             })}
           </div>
           
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden xl:flex items-center gap-2">
             <ModeSwitcher />
             {isAuthenticated ? (
               <>
@@ -169,11 +177,12 @@ export function Navbar() {
             )}
           </div>
 
-          <div className="md:hidden flex items-center">
+          <div className="xl:hidden flex items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleMobileMenu}
+              ref={menuTrigger}
               aria-label="Toggle mobile menu"
               aria-expanded={isMobileMenuOpen}
               aria-controls="mobile-navigation"
@@ -185,16 +194,18 @@ export function Navbar() {
         </div>
       </div>
 
+      <AnimatePresence>
       {isMobileMenuOpen && (
-        <div id="mobile-navigation" className="md:hidden absolute top-20 left-0 right-0 bg-card border-b-[3px] border-black z-40 pb-4">
+        <motion.div id="mobile-navigation" initial={{ opacity: 0, y: reduced ? 0 : -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -10 }} transition={{ duration: reduced ? 0 : 0.2 }} className="mobile-nav xl:hidden absolute top-20 left-0 right-0 bg-card border-b-[3px] border-black z-40 pb-4">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {filteredNavLinks.map((link) => {
               const IconComponent = iconMap[link.icon];
-              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+              const isActive = activeHref === link.href;
               return (
               <Link
                 key={link.label}
                 href={link.href}
+                aria-current={isActive ? "page" : undefined}
                 onClick={closeMobileMenu}
                 className={cn(
                   "flex items-center px-3 py-3 rounded-[6px] text-base font-bold uppercase tracking-wide transition-colors duration-150 ease-in-out border-[2px] border-transparent",
@@ -239,8 +250,10 @@ export function Navbar() {
                </div>
              )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
+      <motion.div aria-hidden="true" className="scroll-progress" style={{ scaleX: reduced ? scrollYProgress : progress }} />
     </nav>
   );
 }

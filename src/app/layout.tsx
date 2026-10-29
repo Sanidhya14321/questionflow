@@ -1,7 +1,8 @@
 
 import { MotionProvider } from "@/components/motion-provider";
 import type { Metadata } from 'next';
-import "../app/global.css"
+import "../app/global.css";
+import "../app/editorial.css";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
