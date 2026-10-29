@@ -4,7 +4,7 @@
 
 1. Pull requests and pushes run **CI / Verify application** with one npm installation, a locked dependency graph, Node 24, PostgreSQL 16, and a 15-minute timeout. Superseded runs are cancelled.
 2. CI validates runtime configuration without printing secrets, lints, checks TypeScript, runs unit tests, audits production dependencies, applies migrations to an isolated test database, and builds the production application.
-3. CI starts that build and exercises signup, session cookies, authoring, repeat/change voting, grading, duplicate-submission retries, history authorization, CSRF rejection, body limits, rate limits, and AI-unavailable behavior. The test suite refuses public hosts and databases not named `questionflow_test`.
+3. CI starts that build and exercises signup, persistent session cookies across repeated page requests, logged-out and invalid-cookie test protection, safe login return links, logout cookie clearing, authoring, repeat/change voting, grading, duplicate-submission retries, history authorization, CSRF rejection, body limits, rate limits, and AI-unavailable behavior. The test suite refuses public hosts and databases not named `questionflow_test`.
 4. Vercel builds the same commit from the repository root. Prisma client generation is part of install and build, so a stale dependency cache cannot omit it.
 5. The Vercel **CI quality gate** waits for GitHub's **Verify application** result before assigning production domains. Timeout or failure leaves the previous production deployment in place.
 6. A production deployment success triggers read-only smoke checks for page rendering, liveness, database/schema readiness, protected routes, and the expected Git revision. Smoke failure is visible in GitHub Actions; it does not silently claim that a failed deployment is healthy and does not automatically roll back database migrations.
@@ -61,3 +61,6 @@ Smoke is read-only. Full integration tests create disposable local data and clea
 JSON bodies are bounded at 64 KiB (8 KiB for authentication). Assessment content and answer arrays have explicit length/count constraints. Saved results use the authenticated identity, stored assessment title/category, and server grading. A submission UUID supports safe retries and rejects reuse for different answers. Request limits are persisted in PostgreSQL across serverless instances; old rate-limit windows are pruned on writes. Same-origin browser mutations are enforced by the proxy and cookies remain HTTP-only, SameSite=Lax and Secure in production.
 
 This is a practice platform: answer keys remain available in practice questions, not a high-stakes proctoring system. Rate limiting uses database availability and fails closed when it is unavailable.
+
+
+Assessment detail and creation pages require a valid session before rendering. The catalog and landing-page preview remain public. Auth transitions use a fresh document navigation to discard stale prefetched redirects; tab notifications and persisted-page restoration revalidate session state. Auth responses and redirects are private and not cacheable.

@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { safeReturnTo } from "@/lib/auth/redirect";
 import { AUTH_COOKIE_NAME, verifySession } from "@/lib/auth/session";
+
+function privateRedirect(url: URL) {
+  const response = NextResponse.redirect(url);
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,26 +19,37 @@ export async function proxy(request: NextRequest) {
 
   const isAdminArea = pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
   const isProfileArea = pathname.startsWith("/profile");
-  const isCreateAssessmentArea = pathname.startsWith("/assessments/create");
+  const isAssessmentArea = pathname.startsWith("/assessments/");
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
 
-  if ((isProfileArea || isCreateAssessmentArea) && !session) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (isAuthPage && session) {
+    return privateRedirect(new URL(session.role === "admin" ? "/admin" : safeReturnTo(request.nextUrl.searchParams.get("next")), request.url));
+  }
+
+  if ((isProfileArea || isAssessmentArea) && !session) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", pathname + request.nextUrl.search);
+    return privateRedirect(login);
   }
 
   if (isProfileArea && session?.role === "admin") {
-    return NextResponse.redirect(new URL("/admin", request.url));
+    return privateRedirect(new URL("/admin", request.url));
   }
 
   if (isAdminArea && (!session || session.role !== "admin")) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+    return privateRedirect(new URL("/login", request.url));
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  if (pathname.startsWith("/api/auth/") || isProfileArea || isAssessmentArea || isAdminArea || isAuthPage) {
+    response.headers.set("Cache-Control", "private, no-store");
+  }
+  return response;
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/profile/:path*", "/admin/:path*", "/api/admin/:path*", "/assessments/create"],
+  matcher: ["/api/:path*", "/profile/:path*", "/admin/:path*", "/api/admin/:path*", "/assessments/:path*", "/login", "/signup"],
 };

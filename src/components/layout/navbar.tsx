@@ -2,12 +2,13 @@
 "use client";
 
 import Link from "next/link";
+import { finishAuthTransition } from "@/lib/auth/client";
 import { AnimatePresence, motion, useScroll, useSpring, useReducedMotion } from "framer-motion";
 import { Menu, X, Home, BookOpenCheck, UserCircle, ShieldCheck, LogIn, UserPlus, LogOut, PlusSquare, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { NAV_LINKS } from "@/lib/constants";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ModeSwitcher } from "@/components/layout/mode-switcher";
@@ -19,27 +20,30 @@ const useAuth = (refreshKey: string) => {
   const [authRole, setAuthRole] = useState<AuthRole>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const updateAuthState = async () => {
       try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
-        if (!response.ok) {
+        const response = await fetch("/api/auth/me", { cache: "no-store", signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (response.status === 401) {
           setCurrentUserId(null);
           setAuthRole(null);
           return;
         }
 
+        if (!response.ok) return;
         const session: { userId: string; role: "user" | "admin" } = await response.json();
+        if (controller.signal.aborted) return;
         setCurrentUserId(session.userId);
         setAuthRole(session.role);
       } catch {
-        setCurrentUserId(null);
-        setAuthRole(null);
+        // A temporary network failure is not proof that the session ended.
       }
     };
 
     void updateAuthState();
     window.addEventListener("questionflow:auth", updateAuthState);
-    return () => window.removeEventListener("questionflow:auth", updateAuthState);
+    return () => { controller.abort(); window.removeEventListener("questionflow:auth", updateAuthState); };
   }, [refreshKey]);
 
 
@@ -63,7 +67,6 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated, role } = useAuth(pathname);
-  const router = useRouter();
   const { toast } = useToast();
 
 
@@ -75,8 +78,8 @@ export function Navbar() {
     }
     window.dispatchEvent(new Event("questionflow:auth"));
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/'); // Redirect to home after logout
-    router.refresh();
+    // Clear all client route caches so Back cannot restore an authenticated test.
+    finishAuthTransition("/");
     if (isMobileMenuOpen) closeMobileMenu();
   };
 

@@ -1,4 +1,5 @@
 
+import { SessionLifecycle } from "@/components/auth/session-lifecycle";
 import { MotionProvider } from "@/components/motion-provider";
 import type { Metadata } from 'next';
 import "../app/global.css";
@@ -26,6 +27,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
         <MotionProvider>
+          <SessionLifecycle />
           {children}
           <Toaster />
         </MotionProvider>

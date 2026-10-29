@@ -1,3 +1,6 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { AUTH_COOKIE_NAME, verifySession } from "@/lib/auth/session";
 import { InteractiveAssessment } from "@/components/assessments/interactive-assessment";
 import { getAssessmentById } from "@/lib/data/assessments";
 import { AlertTriangle } from "lucide-react";
@@ -13,6 +16,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AssessmentPage({ params }: AssessmentPageProps) {
   const { assessmentId } = await params;
+  const token = (await cookies()).get(AUTH_COOKIE_NAME)?.value;
+  const session = token ? await verifySession(token) : null;
+  if (!session) redirect(`/login?next=${encodeURIComponent(`/assessments/${assessmentId}`)}`);
   const assessment = await getAssessmentById(assessmentId);
 
   if (!assessment) {
@@ -34,7 +40,7 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
 
   return (
     <div>
-      <InteractiveAssessment assessment={assessment} />
+      <InteractiveAssessment assessment={assessment} userId={session.userId} />
     </div>
   );
 }

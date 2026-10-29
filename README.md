@@ -9,11 +9,11 @@ QuestionFlow keeps its neo-brutalist identity: bold typography, thick borders, o
 ## Features
 
 - **Assessment library:** curated, community, and AI tabs with search, category filters, sorting, and lightweight summaries; full questions load only when opening an assessment.
-- **Interactive practice:** animated questions, keyboard-accessible choices, progress tracking, instant scores, answer review, and retakes. Guests can practice; signed-in users save their results.
+- **Interactive practice:** animated questions, keyboard-accessible choices, progress tracking, instant scores, answer review, and retakes. Taking assessments requires login; results are saved to the signed-in account. The catalog and three-question landing-page demo remain public.
 - **Authoring:** create multiple-choice and true/false assessments; administrators get a category overview and user statistics.
 - **AI tools:** generate assessments by topic, difficulty, and question count; get personalized recommendations through Groq.
 - **Profiles:** assessment history and perfect-score badges.
-- **Authentication:** hashed passwords, signed HTTP-only session cookies, and role-protected routes.
+- **Authentication:** hashed passwords, signed HTTP-only session cookies, protected test routes, safe return links after login, and synchronized login/logout across tabs.
 - **Accessible motion:** system reduced-motion support, focused question headings, responsive controls, and explicit retry and submission states.
 - **Reliable results:** scores are recalculated on the server and submission UUIDs prevent duplicate history on retries.
 - **Safer APIs:** persisted request limits, bounded JSON bodies, shared question validation, same-origin mutations, and sanitized error responses.

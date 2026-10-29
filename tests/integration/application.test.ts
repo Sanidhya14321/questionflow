@@ -27,7 +27,7 @@ async function request(path: string, options: { method?: string; body?: unknown;
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
   const data = await response.json().catch(() => null);
-  return { status: response.status, data, cookie: response.headers.get('set-cookie')?.split(';')[0] };
+  return { status: response.status, data, location: response.headers.get("location"), cache: response.headers.get("cache-control"), setCookie: response.headers.get("set-cookie"), cookie: response.headers.get('set-cookie')?.split(';')[0] };
 }
 
 test('production application: authentication → authoring → voting → server grading → history → logout', async () => {
@@ -36,6 +36,12 @@ test('production application: authentication → authoring → voting → server
   assert.equal((await request('/profile')).status, 307);
   assert.equal((await request('/api/admin/stats')).status, 403);
   assert.equal((await request('/api/results')).status, 401);
+  for (const path of ['/assessments/web-dev-fundamentals', '/assessments/create']) {
+    const anonymous = await request(path);
+    assert.equal(anonymous.status, 307);
+    assert.equal(new URL(anonymous.location!, url).searchParams.get('next'), path);
+    assert.equal((await request(path, { cookie: 'eduassess_session=invalid' })).status, 307);
+  }
   assert.equal((await request('/api/assessments/ai', { method: 'POST', body: {} })).status, 401);
   const email = `integration-${randomUUID()}@example.test`; emails.push(email);
   const account = { name: 'Integration Learner', email, password: 'integration-password-123' };
@@ -43,9 +49,24 @@ test('production application: authentication → authoring → voting → server
   const signup = await request('/api/auth/signup', { method: 'POST', body: account });
   assert.equal(signup.status, 200); assert.ok(signup.cookie);
   users.push(signup.data.id);
-  const cookie = signup.cookie;
+  let cookie = signup.cookie;
+  assert.match(signup.setCookie!, /HttpOnly/i);
+  assert.match(signup.setCookie!, /Max-Age=604800/i);
   assert.equal((await request('/api/auth/login', { method: 'POST', body: { email, password: 'incorrect' } })).status, 401);
-  assert.equal((await request('/api/auth/login', { method: 'POST', body: account })).status, 200);
+  const login = await request('/api/auth/login', { method: 'POST', body: account });
+  assert.equal(login.status, 200); assert.ok(login.cookie); cookie = login.cookie;
+  for (let visit = 0; visit < 3; visit++) {
+    assert.equal((await request('/profile', { cookie })).status, 200);
+    const me = await request('/api/auth/me', { cookie });
+    assert.equal(me.data.userId, signup.data.id);
+    assert.match(me.cache!, /no-store/);
+  }
+  for (const path of ['/login', '/signup']) {
+    assert.equal(new URL((await request(path, { cookie })).location!, url).pathname, '/profile');
+  }
+  const returnPath = '/assessments/web-dev-fundamentals';
+  assert.equal(new URL((await request(`/login?next=${encodeURIComponent(returnPath)}`, { cookie })).location!, url).pathname, returnPath);
+  assert.equal(new URL((await request('/login?next=https://attacker.invalid', { cookie })).location!, url).pathname, '/profile');
   assert.equal((await request('/api/auth/me', { cookie })).data.userId, signup.data.id);
   assert.equal((await request('/api/admin/stats', { cookie })).status, 403);
   assert.equal((await request('/api/results?userId=another-user', { cookie })).status, 403);
@@ -57,7 +78,8 @@ test('production application: authentication → authoring → voting → server
   const library = await request('/api/assessments', { cookie });
   assert.ok(library.data.every((a: object) => !("questions" in a)));
   assert.ok(library.data.some((a: { id: string }) => a.id === created.data.id));
-  assert.equal((await fetch(new URL(`/assessments/${created.data.id}`, url))).status, 200);
+  assert.equal((await request(`/assessments/${created.data.id}`)).status, 307);
+  assert.equal((await request(`/assessments/${created.data.id}`, { cookie })).status, 200);
   const votePath = `/api/assessments/${created.data.id}/vote`;
   assert.equal((await request(votePath, { method: 'POST', cookie, body: { voteType: 'up' } })).data.upvotes, 1);
   assert.equal((await request(votePath, { method: 'POST', cookie, body: { voteType: 'up' } })).data.upvotes, 1);
@@ -77,7 +99,19 @@ test('production application: authentication → authoring → voting → server
   assert.equal((await request('/api/assessments/ai', { method: 'POST', cookie, body: { topic: 'Algorithms', numberOfQuestions: 3, difficulty: 'medium' } })).status, 503);
   const recommended = await request('/api/recommendations', { method: 'POST', cookie, body: { userHistory: [{ assessmentCategory: 'Web Development', score: 0, interests: 'CS' }], availableAssessments: [{ assessmentCategory: 'Web Development', assessmentTitle: quiz.title }] } });
   assert.equal(recommended.status, 200); assert.deepEqual(recommended.data.recommendations, [quiz.title]);
+  const logout = await request('/api/auth/logout', { method: 'POST', cookie });
+  assert.equal(logout.status, 200); assert.match(logout.setCookie!, /Max-Age=0/i);
+  const loggedOutCookie = logout.cookie!;
+  assert.equal((await request('/api/auth/me', { cookie: loggedOutCookie })).status, 401);
+  assert.equal((await request('/profile', { cookie: loggedOutCookie })).status, 307);
+  assert.equal((await request(`/assessments/${created.data.id}`, { cookie: loggedOutCookie })).status, 307);
+  assert.equal((await request('/api/results', { cookie: loggedOutCookie })).status, 401);
+  const loginAgain = await request('/api/auth/login', { method: 'POST', body: account });
+  assert.equal(loginAgain.status, 200); assert.ok(loginAgain.cookie);
+  assert.equal((await request('/profile', { cookie: loginAgain.cookie })).status, 200);
+  assert.equal((await request(`/assessments/${created.data.id}`, { cookie: loginAgain.cookie })).status, 200);
+  assert.equal((await request('/api/auth/logout', { method: 'POST', cookie: loginAgain.cookie })).status, 200);
   for (let i = 0; i < 10; i++) await request('/api/auth/login', { method: 'POST', body: { email, password: 'incorrect' } });
   assert.equal((await request('/api/auth/login', { method: 'POST', body: account })).status, 429);
-  assert.equal((await request('/api/auth/logout', { method: 'POST', cookie })).status, 200);
+
 });

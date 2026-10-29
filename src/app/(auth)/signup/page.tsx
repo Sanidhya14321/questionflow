@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { finishAuthTransition } from "@/lib/auth/client";
+import { safeReturnTo } from "@/lib/auth/redirect";
 import { motion } from "framer-motion";
 
 export default function SignupPage() {
@@ -19,7 +20,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +54,8 @@ export default function SignupPage() {
         title: "Signup Successful",
         description: "Your account has been created.",
       });
-      router.push(payload.role === "admin" ? "/admin" : "/profile");
-      router.refresh();
+      // A document navigation discards prefetched anonymous redirects and UI.
+      finishAuthTransition(payload.role === "admin" ? "/admin" : safeReturnTo(new URLSearchParams(window.location.search).get("next")));
     } catch (error) {
       console.error("Signup error:", error);
       toast({

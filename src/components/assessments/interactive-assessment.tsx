@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import type { Assessment, AssessmentResult } from "@/lib/types";
 import { QuestionDisplay } from "./question-display";
 import { AssessmentResults } from "./assessment-results";
@@ -18,6 +18,10 @@ async function saveAssessmentResult(result: AssessmentResult, submissionId: stri
     body: JSON.stringify({ assessmentId: result.assessmentId, answers: result.answers, submissionId }),
   });
 
+  if (response.status === 401) {
+    window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+    throw new Error("Your session expired. Please sign in to save your result.");
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     throw new Error(payload?.message || "Failed to save result");
@@ -28,9 +32,10 @@ async function saveAssessmentResult(result: AssessmentResult, submissionId: stri
 
 interface InteractiveAssessmentProps {
   assessment: Assessment;
+  userId: string;
 }
 
-export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps) {
+export function InteractiveAssessment({ assessment, userId }: InteractiveAssessmentProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<(string | null)[]>(
     new Array(assessment.questions.length).fill(null)
@@ -41,22 +46,6 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
   const [isCompleted, setIsCompleted] = useState(false);
   const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null);
   const { toast } = useToast();
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadSession = async () => {
-      const response = await fetch("/api/auth/me", { cache: "no-store" });
-      if (!response.ok) {
-        setCurrentUserId("guestUser");
-        return;
-      }
-      const session: { userId: string } = await response.json();
-      setCurrentUserId(session.userId);
-    };
-
-    void loadSession().catch(() => setCurrentUserId("guestUser"));
-  }, []);
-
   const currentQuestion = assessment.questions[currentQuestionIndex];
   const answeredCount = userAnswers.filter(answer => answer !== null).length;
   const progressPercentage = (answeredCount / assessment.questions.length) * 100;
@@ -88,7 +77,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
   };
 
   const handleSubmitAssessment = async () => {
-    if (submissionLock.current || currentUserId === null) return;
+    if (submissionLock.current) return;
     if (userAnswers.some(ans => ans === null)) {
          toast({
             title: "Incomplete Assessment",
@@ -112,7 +101,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
       assessmentId: assessment.id,
       assessmentTitle: assessment.title,
       category: assessment.category,
-      userId: currentUserId,
+      userId,
       scorePercentage,
       answers: mappedAnswers,
       completedAt: new Date().toISOString(),
@@ -121,9 +110,9 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
     submissionLock.current = true;
     setIsSubmitting(true);
     try {
-      // Guests can practice; only authenticated results are persisted.
+      // Every attempt is graded and persisted by the authenticated API.
       submissionId.current ??= crypto.randomUUID();
-      const savedResult = currentUserId !== "guestUser" ? await saveAssessmentResult(result, submissionId.current) : result;
+      const savedResult = await saveAssessmentResult(result, submissionId.current);
       setAssessmentResult(savedResult);
       setIsCompleted(true);
       toast({
@@ -200,7 +189,6 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
         />
       </AnimatePresence>
 
-      {currentUserId === "guestUser" && <p className="text-sm text-muted-foreground">Practice mode: sign in before starting to save results to your profile.</p>}
       <div className="flex flex-wrap gap-4 justify-between items-center pt-6 border-t">
         <Button
           variant="outline"
@@ -214,7 +202,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
           <Button
             onClick={handleSubmitAssessment}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSubmitting || currentUserId === null || userAnswers[currentQuestionIndex] === null}
+            disabled={isSubmitting || userAnswers[currentQuestionIndex] === null}
           >
             {isSubmitting ? <>Saving… <Loader2 className="w-4 h-4 animate-spin" /></> : <>Submit Assessment <CheckSquare className="w-4 h-4 ml-2" /></>}
           </Button>
@@ -222,7 +210,7 @@ export function InteractiveAssessment({ assessment }: InteractiveAssessmentProps
           <Button
             onClick={handleNextQuestion}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={isSubmitting || currentUserId === null || userAnswers[currentQuestionIndex] === null}
+            disabled={isSubmitting || userAnswers[currentQuestionIndex] === null}
           >
             Next <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
